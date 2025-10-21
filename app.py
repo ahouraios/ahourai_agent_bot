@@ -22,8 +22,9 @@ TELEGRAM_URL = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 # === MongoDB (اختیاری) ===
+# === MongoDB (اتصال) ===
 db = None
-if MONGO_URI is not None and MONGO_URI != "":
+if MONGO_URI is not None and MONGO_URI.strip() != "":
     try:
         client = MongoClient(MONGO_URI)
         db = client["ahourai_agent_bot"]
@@ -31,8 +32,7 @@ if MONGO_URI is not None and MONGO_URI != "":
     except Exception as e:
         db = None
         print("⚠️ MongoDB connection failed:", e)
-else:
-    db = None
+
 
 
 

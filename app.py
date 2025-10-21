@@ -35,27 +35,38 @@ def send_message(chat_id: int, text: str):
     except Exception as e:
         logging.error(f"❌ خطا در ارسال پیام: {e}")
 
-
 def ask_openrouter(prompt: str) -> str:
-    """ارسال پیام به مدل OpenRouter و دریافت پاسخ"""
+    """ارسال پیام به مدل OpenRouter و دریافت پاسخ از preset مخصوص اهورایی"""
     try:
         headers = {
             "Authorization": f"Bearer {OPENROUTER_KEY}",
             "Content-Type": "application/json",
         }
-        data = {
-            "model": OPENROUTER_MODEL,
-            "messages": [
-                {"role": "system", "content": "You are Ahourai Agent, a helpful assistant for Ahourai ecosystem."},
-                {"role": "user", "content": prompt},
-            ],
+
+        payload = {
+            "model": "@preset/ahourai-ai-assistent",
+            "messages": [{"role": "user", "content": prompt}],
         }
-        r = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=data, timeout=20)
-        result = r.json()
-        return result["choices"][0]["message"]["content"].strip()
+
+        response = requests.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers=headers,
+            json=payload,
+            timeout=20,
+        )
+
+        data = response.json()
+
+        if "choices" in data and data["choices"]:
+            reply = data["choices"][0]["message"]["content"]
+        else:
+            reply = f"⚠️ پاسخ نامعتبر از OpenRouter:\n{data}"
+
+        return reply.strip()
+
     except Exception as e:
         logging.error(f"⚠️ خطا از OpenRouter: {e}")
-        return "❌ خطا در اتصال به هوش مصنوعی آهورایی. لطفاً بعداً دوباره تلاش کنید."
+        return "❌ خطا در اتصال به هوش مصنوعی اهورایی. لطفاً کمی بعد مجددا تلاش کنید."
 
 
 # --------------------------------------------
@@ -81,7 +92,7 @@ def webhook():
 
         # پاسخ پیش‌فرض اولیه برای تجربه طبیعی‌تر
         if text == "/start":
-            send_message(chat_id, "سلام 👋\nمن دستیار آهورایی‌ام. آماده‌ام کمک کنم.")
+            send_message(chat_id, "سلام 👋\nمن دستیار اهورایی‌هستم. چطور میتونم کمکتون کنم؟.")
             return jsonify({"ok": True})
 
         # ارسال پرسش به مدل هوش مصنوعی

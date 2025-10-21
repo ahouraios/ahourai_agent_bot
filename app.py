@@ -35,34 +35,41 @@ def send_message(chat_id: int, text: str):
     except Exception as e:
         logging.error(f"❌ خطا در ارسال پیام: {e}")
 
+# =============== نسخه‌ی اصلی واقعی (فعلاً غیرفعال) ===============
+# def ask_openrouter(prompt: str) -> str:
+#     """ارسال پیام به مدل OpenRouter و دریافت پاسخ از preset مخصوص اهورایی"""
+#     try:
+#         headers = {
+#             "Authorization": f"Bearer {OPENROUTER_KEY}",
+#             "Content-Type": "application/json",
+#         }
+#         payload = {
+#             "model": "@preset/ahourai-ai-assistent",
+#             "messages": [{"role": "user", "content": prompt}],
+#         }
+#         response = requests.post(
+#             "https://openrouter.ai/api/v1/chat/completions",
+#             headers=headers,
+#             json=payload,
+#             timeout=20,
+#         )
+#         data = response.json()
+#         if "choices" in data and data["choices"]:
+#             reply = data["choices"][0]["message"]["content"]
+#         else:
+#             reply = f"⚠️ پاسخ نامعتبر از OpenRouter:\n{data}"
+#         return reply.strip()
+#     except Exception as e:
+#         logging.error(f"⚠️ خطا از OpenRouter: {e}")
+#         return "❌ خطا در اتصال به هوش مصنوعی اهورایی. لطفاً کمی بعد مجددا تلاش کنید."
+
+
+# =============== نسخه‌ی تست (Echo Mode) ===============
 def ask_openrouter(prompt: str) -> str:
-    """ارسال پیام به مدل OpenRouter و دریافت پاسخ از preset مخصوص اهورایی"""
+    """ارسال پیام به مدل OpenRouter (فعلاً حالت تست لوکال)"""
     try:
-        headers = {
-            "Authorization": f"Bearer {OPENROUTER_KEY}",
-            "Content-Type": "application/json",
-        }
-
-        payload = {
-            "model": "@preset/ahourai-ai-assistent",
-            "messages": [{"role": "user", "content": prompt}],
-        }
-
-        response = requests.post(
-            "https://openrouter.ai/api/v1/chat/completions",
-            headers=headers,
-            json=payload,
-            timeout=20,
-        )
-
-        data = response.json()
-
-        if "choices" in data and data["choices"]:
-            reply = data["choices"][0]["message"]["content"]
-        else:
-            reply = f"⚠️ پاسخ نامعتبر از OpenRouter:\n{data}"
-
-        return reply.strip()
+        # شبیه‌سازی پاسخ OpenRouter برای تست پایداری
+        return f"👋 پیام شما دریافت شد: {prompt}"
 
     except Exception as e:
         logging.error(f"⚠️ خطا از OpenRouter: {e}")

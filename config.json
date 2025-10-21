@@ -1,0 +1,11 @@
+{
+  "project_name": "Ahourai Agent Bot",
+  "version": "1.0.0",
+  "developer": "@omidmeysami",
+  "backend": "Flask + MongoDB + OpenRouter",
+  "description": "Telegram AI assistant using gpt-oss-20b via OpenRouter",
+  "base_url": "https://ahourai-agent-bot.onrender.com",
+  "webhook_endpoint": "/<BOT_TOKEN>",
+  "database": "ahourai_agent_db",
+  "mongo_collection": "messages"
+}

@@ -1,28 +1,26 @@
-# ================================
-# Ahourai Agent Bot (Flask Core)
-# Author: Omid Meysami
-# Powered by OpenRouter + Telegram
-# ================================
+# =======================
+#  Ahourai Agent Bot (Final)
+#  by Omid Meysami | ahourai.com
+# =======================
 
 from flask import Flask, request
 import requests
 import os
 from pymongo import MongoClient
+from datetime import datetime
 
-# === Flask config ===
+# === Flask App ===
 app = Flask(__name__)
 
 # === Environment Variables ===
-TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
-OPENROUTER_KEY = os.environ.get("OPENROUTER_KEY")
+BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
+OPENROUTER_API_KEY = os.environ.get("OPENROUTER_KEY")
 MONGO_URI = os.environ.get("MONGO_URI")
 
-# === Telegram constants ===
-TELEGRAM_URL = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+TELEGRAM_URL = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
-# === MongoDB (اختیاری) ===
-# === MongoDB (اتصال) ===
+# === MongoDB Connection ===
 db = None
 if MONGO_URI is not None and MONGO_URI.strip() != "":
     try:
@@ -33,34 +31,29 @@ if MONGO_URI is not None and MONGO_URI.strip() != "":
         db = None
         print("⚠️ MongoDB connection failed:", e)
 
-
-
-
-# === Core AI interaction ===
-def ask_openrouter(user_input: str) -> str:
+# === Function: Ask OpenRouter ===
+def ask_openrouter(prompt_text: str) -> str:
     headers = {
-        "Authorization": f"Bearer {OPENROUTER_KEY}",
-        "HTTP-Referer": "https://ahourai.com",
-        "X-Title": "Ahourai Agent Bot"
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json"
     }
 
-    payload = {
+    data = {
         "model": "@preset/ahourai-ai-assistent",
         "messages": [
-            {"role": "user", "content": user_input}
+            {"role": "user", "content": prompt_text}
         ]
     }
 
     try:
-        response = requests.post(OPENROUTER_URL, headers=headers, json=payload, timeout=30)
-        data = response.json()
-        ai_text = data["choices"][0]["message"]["content"]
-        return ai_text
+        res = requests.post(OPENROUTER_URL, headers=headers, json=data, timeout=20)
+        response_json = res.json()
+        return response_json["choices"][0]["message"]["content"]
     except Exception as e:
-        return f"⚠️ خطا در ارتباط با سرویس هوش مصنوعی: {e}"
+        print("⚠️ OpenRouter request failed:", e)
+        return "در حال حاضر سامانه پاسخگو نیست، لطفاً بعداً تلاش کنید."
 
-
-# === Telegram handler ===
+# === Function: Handle Telegram Messages ===
 def handle_telegram_message(update: dict):
     if "message" not in update:
         return
@@ -68,32 +61,41 @@ def handle_telegram_message(update: dict):
     chat_id = update["message"]["chat"]["id"]
     user_text = update["message"].get("text", "")
 
-    # ذخیره پیام در DB (در صورت موجود بودن)
-    if db:
-        db.logs.insert_one({"chat_id": chat_id, "user_text": user_text})
+    # --- ذخیره در MongoDB ---
+    if db is not None:
+        try:
+            db.logs.insert_one({
+                "chat_id": chat_id,
+                "user_text": user_text,
+                "timestamp": datetime.utcnow()
+            })
+        except Exception as e:
+            print("⚠️ DB insert failed:", e)
 
-    # پاسخ هوش مصنوعی
+    # --- دریافت پاسخ ---
     ai_reply = ask_openrouter(user_text)
 
-    # ارسال پاسخ به تلگرام
-    payload = {"chat_id": chat_id, "text": ai_reply}
-    requests.post(TELEGRAM_URL, json=payload)
+    # --- ارسال پاسخ به تلگرام ---
+    try:
+        requests.post(TELEGRAM_URL, json={
+            "chat_id": chat_id,
+            "text": ai_reply
+        })
+    except Exception as e:
+        print("⚠️ Telegram send failed:", e)
 
-
-# === Webhook route ===
+# === Webhook Route ===
 @app.route('/webhook', methods=['POST'])
 def webhook():
     update = request.get_json()
     handle_telegram_message(update)
-    return "ok", 200
+    return "OK", 200
 
+# === Basic Route ===
+@app.route('/')
+def home():
+    return "🤖 Ahourai Agent Bot Active — Powered by Omid Meysami", 200
 
-# === Health check route ===
-@app.route('/', methods=['GET'])
-def index():
-    return "✅ Ahourai Agent Bot active — Powered by @OmidMeysami", 200
-
-
-# === App entry ===
+# === Run (for local dev only) ===
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))

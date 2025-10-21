@@ -23,13 +23,17 @@ OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 # === MongoDB (اختیاری) ===
 db = None
-if MONGO_URI:
+if MONGO_URI is not None and MONGO_URI != "":
     try:
         client = MongoClient(MONGO_URI)
         db = client["ahourai_agent_bot"]
         print("✅ Connected to MongoDB Atlas")
     except Exception as e:
+        db = None
         print("⚠️ MongoDB connection failed:", e)
+else:
+    db = None
+
 
 
 # === Core AI interaction ===
